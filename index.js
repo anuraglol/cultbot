@@ -2,6 +2,9 @@ const Discord = require("discord.js");
 const { MessageEmbed } = require("discord.js");
 
 require("dotenv").config();
+// lib to run js code
+const { exec } = require("child_process");
+
 
 const PREFIX = "?";
 
@@ -29,72 +32,61 @@ client.on("messageCreate", async (message) => {
   }
 });
 
+// send rules as embed
 client.on("messageCreate", async (message) => {
-  if (message.content === `${PREFIX}kick`) {
-    const member = message.mentions.members.first();
-    if (!member) {
-      return message.reply("Please mention a valid member of this server");
-    }
-    if (!member.kickable) {
-      return message.reply(
-        "I cannot kick this user! Do they have a higher role? Do I have kick permissions?"
-      );
-    }
-    await member.kick();
+  if (message.content === `${PREFIX}rules`) {
 
+    message.delete();
     const embed = new MessageEmbed()
-      .setTitle("Kicked")
-      .setDescription(`${member.user.tag} has been kicked`)
-      .setColor("#ff0000")
-      .setTimestamp();
-
-    message.channel.send(embed);
+      .setTitle("Rules")
+      .setDescription(
+        "1. No spamming\n2. No spamming\n3. No spamming\n4."
+      )
+      .setColor("#0099ff");
+    message.channel.send({ embeds: [embed] });
   }
 });
 
-// reaction roles
-client.on("messageReactionAdd", async (reaction, user) => {
-  const message = reaction.message;
-  const member = message.guild.members.cache.get(user.id);
-  const role = message.guild.roles.cache.find(
-    (r) => r.name === reaction.emoji.name
-  );
-
-  if (reaction.partial) {
-    try {
-      await reaction.fetch();
-    } catch (error) {
-      console.log("Something went wrong when fetching the message: ", error);
-      return;
-    }
-  }
-
-  if (message.id === "735754901058181856") {
-    if (reaction.emoji.name === "🎉") {
-      member.roles.add(role);
-    }
-  }
-});
-
-// run javascript code
+// run javascript code send result as embed using v13
 client.on("messageCreate", async (message) => {
-  if (message.content === `${PREFIX}run`) {
-    const code = message.content.split(" ").slice(1).join(" ");
+  if (message.content.startsWith(`${PREFIX}js`)) {
+    const args = message.content.slice(3).split(" ");
+    const code = args.join(" ");
     try {
       const evaled = eval(code);
-      const clean = await require("util").inspect(evaled, {
-        depth: 0,
-      });
-      message.channel.send(clean, {
-        code: "js",
-      });
+      const embed = new MessageEmbed()
+        .setTitle("JavaScript")
+        .setDescription(`\`\`\`js\n${evaled}\n\`\`\``)
+        .setColor("#0099ff");
+      message.channel.send({ embeds: [embed] });
     } catch (err) {
-      message.channel.send(err, {
-        code: "js",
-      });
+      const embed = new MessageEmbed()
+        .setTitle("JavaScript")
+        .setDescription(`\`\`\`js\n${err}\n\`\`\``)
+        .setColor("#0099ff");
+      message.channel.send({ embeds: [embed] });
     }
   }
 });
+
+// run js code using exec and send result as embed
+client.on("messageCreate", async (message) => {
+  if (message.content.startsWith(`${PREFIX}js2`)) {
+    const args = message.content.slice(4).split(" ");
+    const code = args.join(" ");
+    exec(code, (err, stdout, stderr) => {
+      const embed = new MessageEmbed()
+        .setTitle("JavaScript")
+        .setDescription(`\`\`\`js\n${stdout}\n\`\`\``)
+        .setColor("#0099ff");
+      message.channel.send({ embeds: [embed] });
+    });
+  }
+});
+
+// client.on("messageCreate", async (msg) => {
+//   msg.channel.send("thik hai bhai, mai chalta hu ab")
+// })
 
 
 client.login(process.env[`TOKEN`]);
